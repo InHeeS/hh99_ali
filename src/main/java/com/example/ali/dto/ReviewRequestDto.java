@@ -20,7 +20,7 @@ public class ReviewRequestDto {
 
     public ReviewRequestDto(Long orderId, String comment, Integer rating) {
         this.orderId = orderId;
-        this.comment = comment;
+        this.comment  = comment;
         this.rating = rating;
     }
 }

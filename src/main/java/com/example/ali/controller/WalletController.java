@@ -17,6 +17,6 @@ public class WalletController {
     public ResponseEntity<UserWalletResponseDto> getUserPoint(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return ResponseEntity.ok(userservice.getUserPoint(userDetails.getUser()));
+        return ResponseEntity.ok().body(userservice.getUserPoint(userDetails.getUser()));
     }
 }
