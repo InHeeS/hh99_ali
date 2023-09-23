@@ -48,6 +48,7 @@ class UserRepositoryTest {
     void findListUser(){
 
         // given
+        List<User> users1 =  userRepository.findAll();
         UserWallet userWallet = new UserWallet(1000L);
         userWalletRepository.save(userWallet);
         User user = new User("user1" , "1234","user1@naver.com", userWallet);
@@ -63,7 +64,7 @@ class UserRepositoryTest {
         // when
         List<User> users =  userRepository.findAll();
         // then
-        assertThat(users).isNotNull().hasSize(4); // 위의 생성 test 2번 실행후
+        assertThat(users).isNotNull().hasSize(users1.size()+2); // 위의 생성 test 2번 실행후
     }
 
 

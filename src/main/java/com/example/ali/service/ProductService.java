@@ -79,10 +79,8 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getSearchProduct(String keyword) {
 
-        List<Product> productList = new ArrayList<>();
+        return productRepository.findByproductNameContaining(keyword).stream().map(ProductResponseDto::new).toList();
 
-        productList = productRepository.findAllByProductNameLike(keyword);
-        return productList.stream().map(ProductResponseDto::new).toList();
     }
 
     @Transactional
