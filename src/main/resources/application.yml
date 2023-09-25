@@ -4,7 +4,7 @@ cloud:
       accessKey: ${access}
       secretKey: ${saccess}
     s3:
-      bucket: elasticbeanstalk-ap-northeast-2-940107362230
+      bucket: ali-bucket1
     region:
       static: ap-northeast-2
     stack:
