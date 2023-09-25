@@ -1,0 +1,43 @@
+cloud:
+  aws:
+    credentials:
+      accessKey: ${access}
+      secretKey: ${saccess}
+    s3:
+      bucket: elasticbeanstalk-ap-northeast-2-940107362230
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
+
+spring:
+  datasource:
+    url: jdbc:mysql://springboot-database-hh99-ali.ckklth9vipd7.ap-northeast-2.rds.amazonaws.com:3306/ali
+    username: admin
+    password: Ali16_15
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: inhees98@gmail.com
+    password: xxac auuo gvqe kouf
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 5000
+          starttls:
+            enable: true
+  thymeleaf:
+    cache: false
+
+jwt:
+  secret:
+    key: 7JWI64WV7ZWY7IS47JqUIO2Vre2VtDE26riwIDE17KGw7J6F64uI64ukLg
