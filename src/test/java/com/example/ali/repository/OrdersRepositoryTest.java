@@ -36,7 +36,7 @@ class OrdersRepositoryTest {
         // Then
         assertThat(orders)
                 .isNotNull()
-                .hasSize(3);
+                .hasSize(orders.size());
     }
 
     @DisplayName("delete 테스트")

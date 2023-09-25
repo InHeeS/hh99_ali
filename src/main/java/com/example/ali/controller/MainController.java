@@ -8,6 +8,6 @@ public class MainController {
 
     @GetMapping("/")
     public String showIndex() {
-        return "index";
+        return "productList";
     }
 }
