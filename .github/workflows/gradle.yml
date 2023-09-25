@@ -51,6 +51,8 @@ jobs:
         env:
           cloud.aws.credentials.accessKey: ${{ secrets.AWS_ACCESS_KEY_ID_2 }}
           cloud.aws.credentials.secretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_2 }}
+          spring.datasource.url: ${{secrets.DB_URL}}
+          spring.datasource.password: ${{secrets.DB_PASSWORD}}
 #          jwt.secret.key: ${{ secrets.JWT_KEY }}
 
 
