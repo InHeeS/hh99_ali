@@ -43,15 +43,15 @@ jobs:
           distribution: 'temurin'
 
 
-#       # (2.5) environment 세팅
-#       - name: Set yml file
-#         uses: microsoft/variable-substitution@v1
-#         with:
-#           files: ${{ env.RESOURCE_PATH }}
-#         env:
-#           cloud.aws.credentials.accessKey: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           cloud.aws.credentials.secretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-# #          jwt.secret.key: ${{ secrets.JWT_KEY }}
+      # (2.5) environment 세팅
+      - name: Set yml file
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: ${{ env.RESOURCE_PATH }}
+        env:
+          cloud.aws.credentials.accessKey: ${{ secrets.AWS_ACCESS_KEY_ID_2 }}
+          cloud.aws.credentials.secretKey: ${{ secrets.AWS_SECRET_ACCESS_KEY_2 }}
+#          jwt.secret.key: ${{ secrets.JWT_KEY }}
 
 
       # (3) gradlew 실행 권한부여
