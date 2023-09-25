@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Thymeleaf Header</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="center">
+    <a th:href="@{/}" href="#">Home</a>
+</div>
+<div id="loggedOutButtons">
+    <a href="/auth/user/login-page" class="header-button">로그인</a>
+    <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+    <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+</div>
+<div id="loggedInInfo" style="display: none;">
+    <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+    <span id="usernameSpan"></span>
+    <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+</div>
+</body>
+<script>
+</script>

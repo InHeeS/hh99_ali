@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order List</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="header">
+    <div class="center">
+        <a th:href="@{/}" href="#">Home</a>
+    </div>
+    <div id="loggedOutButtons">
+        <a href="/auth/user/login-page" class="header-button">로그인</a>
+        <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+        <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+    </div>
+    <div id="loggedInInfo" style="display: none;">
+        <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+        <span id="usernameSpan"></span>
+        <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+    </div>
+</div>
+
+<div style="display: flex;">
+    <!-- Aside Section -->
+    <div th:replace="aside :: aside"></div>
+    <div th:fragment="orders-list">
+        <div class="order-list" style="margin-left: 250px;">
+            <h1>주문 목록</h1>
+            <table>
+                <thead>
+                <tr>
+                    <th>주문 번호</th>
+                    <th>상품 이미지</th>
+                    <th>상품 이름</th>
+                    <th>수량</th>
+                    <th>상품 정보</th>
+                    <th>상품 상태</th>
+                    <th>수정</th>
+                    <th>삭제</th>
+                </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                <!-- 데이터는 AJAX 요청을 통해 동적으로 채워집니다. -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>Edit Product</h2>
+        <form id="editForm">
+            <input type="hidden" id="editProductId" value="">
+            <label for="editProductName">Product Name:</label>
+            <input type="text" id="editProductName" required><br>
+            <label for="editStock">Stock:</label>
+            <input type="number" id="editStock" required><br>
+            <label for="editInfo">Info:</label>
+            <input type="text" id="editInfo" required><br>
+            <label for="editPrice">Price:</label>
+            <input type="number" id="editPrice" required><br>
+            <label for="editProductStatus">Product Status:</label>
+            <input type="text" id="editProductStatus" required><br>
+            <button type="submit" onclick="updateProduct(event)">Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- New Product Modal -->
+<div id="newProductModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeNewProductModal()">×</span>
+        <h2>Create New Product</h2>
+        <form id="newProductForm" enctype="multipart/form-data">
+            <!-- Add fields for new product details -->
+            <label for="newProductName">Product Name:</label>
+            <input type="text" id="newProductName" required><br>
+            <label for="newStock">Stock:</label>
+            <input type="number" id="newStock" required><br>
+            <label for="newInfo">Info:</label>
+            <input type="text" id="newInfo" required><br>
+            <label for="newPrice">Price:</label>
+            <input type="number" id="newPrice" required><br>
+            <label for="newProductStatus">Product Status:</label>
+            <select id="newProductStatus" required>
+                <option value="AVAILABLE">AVAILABLE</option>
+                <option value="DISCONTINUED">DISCONTINUED</option>
+            </select><br>
+            <label for="image">Image:</label>
+            <input type="file" id="image" accept="image/*" required><br> <!-- Accepts only image files -->
+            <button type="submit" onclick="createProduct(event)">Create Product</button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    var Access_Token = localStorage.getItem("Access_Token");
+    var Refresh_Token = localStorage.getItem("Refresh_Token");
+
+    function loadProducts() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "api/products/seller");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                displayProducts(response);
+            } else {
+                console.error("Failed to fetch seller's products:", xhr.responseText);
+            }
+        };
+        xhr.send();
+    }
+
+
+    // Function to display products in the HTML
+    function displayProducts(products) {
+      var tableBody = document.getElementById("ordersTableBody");
+      // Clear any existing content in the table body
+      tableBody.innerHTML = "";
+
+        products.forEach(function (product) {
+            var row = tableBody.insertRow();
+
+            // Add the product ID
+            row.insertCell(0).textContent = product.productId;
+
+            // Create an image element for the product image
+            var imgCell = row.insertCell(1);
+            var img = document.createElement("img");
+            img.src = product.imgUrl;  // Set the image source to the product's img URL
+            img.alt = "Product Image";  // Add alt text for accessibility
+            img.width = 100;  // 이미지 크기 조절 (원하는 크기로 변경 가능)
+            imgCell.appendChild(img);
+
+            // Add other cells based on your product structure (productName, price, etc.)
+            row.insertCell(2).textContent = product.productName;
+            row.insertCell(3).textContent = product.stock;
+            row.insertCell(4).textContent = product.info;
+            row.insertCell(5).textContent = product.productStatus;
+
+            var editCell = row.insertCell(6);
+            var editButton = document.createElement("button");
+            editButton.textContent = "Edit";
+            editButton.addEventListener("click", function () {
+                openEditModal(product.productId, product.productName, product.stock, product.info, product.productStatus, product.price);
+            });
+            editCell.appendChild(editButton);
+
+            var deleteCell = row.insertCell(7);
+            var deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.addEventListener("click", function () {
+                // Call a function to handle deletion
+                deleteProduct(product.productId);
+            });
+            deleteCell.appendChild(deleteButton);
+        });
+    }
+
+
+    function openEditModal(productId, productName, stock, info, productStatus, price) {
+        document.getElementById("editProductId").value = productId;
+        document.getElementById("editProductName").value = productName;
+        document.getElementById("editStock").value = stock;
+        document.getElementById("editInfo").value = info;
+        document.getElementById("editProductStatus").value = productStatus;
+        document.getElementById("editPrice").value = price; // Set the price input value
+
+        // Show the modal
+        var editModal = document.getElementById("editModal");
+        editModal.style.display = "block";
+    }
+
+    // Function to close the edit modal
+    function closeEditModal() {
+        var editModal = document.getElementById("editModal");
+        editModal.style.display = "none";
+    }
+
+    // Function to update product details
+    function updateProduct(event) {
+        event.preventDefault();  // Prevent the default form submission behavior
+
+        var productId = document.getElementById("editProductId").value;
+        var productName = document.getElementById("editProductName").value;
+        var stock = document.getElementById("editStock").value;
+        var info = document.getElementById("editInfo").value;
+        var productStatus = document.getElementById("editProductStatus").value;
+        var price = document.getElementById("editPrice").value;  // Added line to get price
+
+        var updatedProduct = {
+            productId: productId,
+            productName: productName,
+            stock: stock,
+            info: info,
+            productStatus: productStatus,
+            price: price  // Include price in the updated product object
+        };
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("PUT", "/api/seller/product/" + productId);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 202) {
+                // Product updated successfully, you can handle further actions here
+                console.log("Product updated successfully:", xhr.responseText);
+                // Close the modal after updating
+                closeEditModal();
+                // Reload the product list or update the displayed product details as needed
+                // ...
+            } else {
+                // Handle error
+                console.error("Failed to update product:", xhr.responseText);
+            }
+        };
+        xhr.send(JSON.stringify(updatedProduct));
+    }
+
+    // Function to delete a product
+    function deleteProduct(productId) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("DELETE", "/api/seller/product/" + productId);
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // Product deleted successfully, you can handle further actions here
+                console.log("Product deleted successfully:", xhr.responseText);
+                // Reload the product list or update the displayed product details as needed
+                // ...
+                // Reload the product list after deletion
+                window.location.reload();
+            } else {
+                // Handle error
+                console.error("Failed to delete product:", xhr.responseText);
+            }
+        };
+        xhr.send();
+    }
+
+    function openNewProductModal() {
+        var newProductModal = document.getElementById("newProductModal");
+        newProductModal.style.display = "block";
+    }
+
+    function closeNewProductModal() {
+        var newProductModal = document.getElementById("newProductModal");
+        newProductModal.style.display = "none";
+    }
+
+    function createProduct() {
+        var productName = document.getElementById("newProductName").value;
+        var stock = document.getElementById("newStock").value;
+        var info = document.getElementById("newInfo").value;
+        var productStatus = document.getElementById("newProductStatus").value;
+        var price = document.getElementById("newPrice").value;
+
+        var imageFile = document.getElementById("image").files[0];
+
+        var formData = new FormData();
+        formData.append("image", imageFile);
+
+        // Convert the JSON data to a string and append it as a part
+        var jsonData = JSON.stringify({
+            productName: productName,
+            stock: stock,
+            info: info,
+            productStatus: productStatus,
+            price: price
+        });
+        formData.append('requestDto', new Blob([jsonData], {
+            type: 'application/json'
+        }));
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/seller/product");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 201) {
+                // Product created successfully
+                console.log("Product created successfully:", xhr.responseText);
+            } else {
+                // Handle error
+                console.error("Failed to create product:", xhr.responseText);
+            }
+        };
+        xhr.send(formData);
+    }
+
+    function initializeOnLoad() {
+        loadProducts();
+        let isLoggingOut = false;  // 로그아웃 중인지 확인하는 전역 플래그
+
+        function logout() {
+            isLoggingOut = true;  // 로그아웃 중임을 표시
+            localStorage.removeItem("Access_Token");
+            localStorage.removeItem("Refresh_Token");
+            location.reload();
+        }
+
+        if (isLoggingOut) {
+            return;  // 로그아웃 중일 경우, 나머지 로직을 건너뛴다.
+        }
+
+        const token = localStorage.getItem('Access_Token');
+        const currentPath = window.location.pathname;
+
+        if (!token) {
+            // 토큰이 없는 경우 (비회원)
+            document.getElementById('productManagement').style.display = 'none';
+            document.getElementById('storeManagement').style.display = 'none';
+            document.getElementById('orderManagementLink').style.display = 'none';
+        } else {
+            const decodedToken = atob(token.split('.')[1]);
+            const payload = JSON.parse(decodedToken);
+            const userType = payload.userType;
+
+            if (userType === 'SELLER') {
+                // SELLER인 경우 모든 메뉴가 보임
+                document.getElementById('productManagement').style.display = 'block';
+                document.getElementById('storeManagement').style.display = 'block';
+                document.getElementById('orderManagementLink').setAttribute('href', '/seller3');
+            } else if (userType === 'USER') {
+                // USER인 경우 상품 목록, 주문 관리만 보임
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').setAttribute('href', '/orders');
+            } else {
+                // 그 외 경우 (예: 토큰은 있지만 userType이 SELLER나 USER가 아닌 경우)
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').style.display = 'none';
+            }
+
+            const username = payload.sub;
+
+            const greetingMessage = `[${userType}] ${username}  `;
+            const usernameSpan = document.getElementById('usernameSpan');
+            usernameSpan.textContent = greetingMessage;
+
+            const loggedOutButtons = document.getElementById('loggedOutButtons');
+            loggedOutButtons.style.display = 'none';
+            document.getElementById('loggedInInfo').style.display = 'block';
+        }
+    }
+    window.addEventListener("load", initializeOnLoad);
+</script>
+
+<!-- Add New Product button at the bottom -->
+<div style="margin-top: 20px; text-align: center;">
+    <button onclick="openNewProductModal()">상품 추가</button>
+</div>
+</body>
+</html>
+
+
+</body>
+</html>

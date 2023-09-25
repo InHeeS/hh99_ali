@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Order List</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="header">
+    <div class="center">
+        <a th:href="@{/}" href="#">Home</a>
+    </div>
+    <div id="loggedOutButtons">
+        <a href="/auth/user/login-page" class="header-button">로그인</a>
+        <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+        <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+    </div>
+    <div id="loggedInInfo" style="display: none;">
+        <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+        <span id="usernameSpan"></span>
+        <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+    </div>
+</div>
+<div style="display: flex;">
+    <!-- Aside Section -->
+    <div th:replace="aside :: aside"></div>
+    <div th:fragment="orders-list">
+        <div class="order-list" style="margin-left: 250px;">
+            <h1>주문 목록</h1>
+            <table>
+                <thead>
+                <tr>
+                    <th>상점 id</th>
+                    <th>상점 이름</th>
+                    <th>상점 정보</th>
+                </tr>
+                </thead>
+                <tbody id="storesTableBody">
+                <!-- 데이터는 AJAX 요청을 통해 동적으로 채워집니다. -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Edit Store Information</h2>
+        <label for="storeName">Store Name:</label>
+        <input type="text" id="storeName" placeholder="Enter store name">
+        <label for="info">Shop Information:</label>
+        <input type="text" id="info" placeholder="Enter shop information">
+        <button onclick="updateStore()">Save Changes</button>
+    </div>
+</div>
+<div style="margin-top: 20px; text-align: center;">
+    <button onclick="openModal()">Edit my store information</button>
+</div>
+
+<script>
+    var Access_Token = localStorage.getItem("Access_Token");
+    var Refresh_Token = localStorage.getItem("Refresh_Token");
+
+    // 페이지 로드 시 주문 목록 요청
+    function loadProducts() {
+        // Send a GET request to the API endpoint to fetch the seller's products
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "api/seller/store");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                displayProducts(response);  // Display products on success
+            } else {
+                // Handle error
+                console.error("Failed to fetch seller's products:", xhr.responseText);
+            }
+        };
+        xhr.send();
+    };
+
+    // Function to display products in the HTML
+    function displayProducts(stores) {
+        var tableBody = document.getElementById("storesTableBody");
+        // Clear any existing content in the table body
+        tableBody.innerHTML = "";
+
+        stores.forEach(function (store) {
+            var row = tableBody.insertRow();
+
+            // Add the product ID
+            row.insertCell(0).textContent = store.sellerId;
+            row.insertCell(1).textContent = store.storeName;
+            row.insertCell(2).textContent = store.info;
+
+        });
+    }
+    function openModal() {
+        var modal = document.getElementById("modal");
+        modal.style.display = "block";
+    }
+
+    function closeModal() {
+        var modal = document.getElementById("modal");
+        modal.style.display = "none";
+    }
+    function updateStore() {
+        var storeName = document.getElementById("storeName").value;
+        var info = document.getElementById("info").value;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("PUT", "api/seller/store");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                console.log("Store information updated successfully.");
+                closeModal(); // Close the modal after successful update
+                // You may want to reload the page or update the store information in the UI
+            } else {
+                console.error("Failed to update store information:", xhr.responseText);
+            }
+        };
+        var requestBody = JSON.stringify({
+            "storeName": storeName,
+            "info": info
+        });
+        xhr.send(requestBody);
+    }
+
+    function initializeOnLoad() {
+        loadProducts();
+        let isLoggingOut = false;  // 로그아웃 중인지 확인하는 전역 플래그
+
+        function logout() {
+            isLoggingOut = true;  // 로그아웃 중임을 표시
+            localStorage.removeItem("Access_Token");
+            localStorage.removeItem("Refresh_Token");
+            location.reload();
+        }
+
+        if (isLoggingOut) {
+            return;  // 로그아웃 중일 경우, 나머지 로직을 건너뛴다.
+        }
+
+        const token = localStorage.getItem('Access_Token');
+        const currentPath = window.location.pathname;
+
+        if (!token) {
+            // 토큰이 없는 경우 (비회원)
+            document.getElementById('productManagement').style.display = 'none';
+            document.getElementById('storeManagement').style.display = 'none';
+            document.getElementById('orderManagementLink').style.display = 'none';
+        } else {
+            const decodedToken = atob(token.split('.')[1]);
+            const payload = JSON.parse(decodedToken);
+            const userType = payload.userType;
+
+            if (userType === 'SELLER') {
+                // SELLER인 경우 모든 메뉴가 보임
+                document.getElementById('productManagement').style.display = 'block';
+                document.getElementById('storeManagement').style.display = 'block';
+                document.getElementById('orderManagementLink').setAttribute('href', '/seller3');
+            } else if (userType === 'USER') {
+                // USER인 경우 상품 목록, 주문 관리만 보임
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').setAttribute('href', '/orders');
+            } else {
+                // 그 외 경우 (예: 토큰은 있지만 userType이 SELLER나 USER가 아닌 경우)
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').style.display = 'none';
+            }
+
+            const username = payload.sub;
+
+            const greetingMessage = `[${userType}] ${username}  `;
+            const usernameSpan = document.getElementById('usernameSpan');
+            usernameSpan.textContent = greetingMessage;
+
+            const loggedOutButtons = document.getElementById('loggedOutButtons');
+            loggedOutButtons.style.display = 'none';
+            document.getElementById('loggedInInfo').style.display = 'block';
+        }
+    }
+    window.addEventListener("load", initializeOnLoad);
+
+</script>

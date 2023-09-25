@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Index Page</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<!-- Header Section -->
+<div th:replace="header :: header"></div>
+
+<div style="display: flex;">
+  <!-- Aside Section -->
+  <div th:replace="aside :: aside"></div>
+
+  <!-- Main Content Section -->
+  <div style="flex-grow: 1; padding: 20px;" th:replace="productList :: product-list">
+    <!-- ... (other content) -->
+  </div>
+</div>
+</body>
+</html>

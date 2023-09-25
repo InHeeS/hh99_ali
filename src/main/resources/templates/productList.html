@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <title>Product List</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<!-- Header Section -->
+<div class="header">
+  <div class="center">
+    <a th:href="@{/}" href="#">Home</a>
+  </div>
+  <div id="loggedOutButtons">
+    <a href="/auth/user/login-page" class="header-button">로그인</a>
+    <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+    <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+  </div>
+  <div id="loggedInInfo" style="display: none;">
+    <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+    <span id="usernameSpan"></span>
+    <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+  </div>
+</div>
+
+<div style="display: flex;">
+  <!-- Aside Section -->
+  <div th:replace="aside :: aside"></div>
+  <div th:fragment="product-list">
+<div class="product-list">
+  <h1>상품 목록</h1>
+  <table>
+    <thead>
+    <tr>
+      <th>상품 이름</th>
+      <th>가격</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="product : ${products}">
+      <td th:text="${product.name}">상품 이름</td>
+      <td th:text="${product.price}">가격</td>
+    </tr>
+    </tbody>
+  </table>
+  <div class="paging">
+<!--    <a th:href="@{/product?page=0}" href="#">처음</a>-->
+<!--    <a th:href="@{{/product?page=${page-1}}}" href="#">이전</a>-->
+<!--    <a th:href="@{{/product?page=${page+1}}}" href="#">다음</a>-->
+<!--    <a th:href="@{/product?page=last}" href="#">마지막</a>-->
+  </div>
+</div>
+</div>
+  </div>
+</body>
+<script src="/js/basic.js"></script>
+</html>

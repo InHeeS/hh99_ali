@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aside Section</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div th:fragment="aside" class="aside">
+    <div class="aside">
+        <!-- Product List with Paging -->
+        <div class="section">
+            <h2><a th:href="@{/product}" href="#">상품 목록</a></h2>
+        </div>
+
+        <!-- Order List -->
+        <div class="section">
+            <h2><a th:href="@{/orders}" href="#" id="orderManagementLink">주문 관리</a></h2>
+        </div>
+
+        <!-- Product Management (Visible only to 'seller' role) -->
+        <div class="section" id="productManagement">
+            <h2><a th:href="@{/seller}" href="#">상품 관리</a></h2>
+        </div>
+
+        <div class="section" id="storeManagement">
+            <h2><a th:href="@{/seller2}" href="#">매장 관리</a></h2>
+        </div>
+    </div>
+
+<!--    <div class="section">  &lt;!&ndash;    th:if="${userRole} == 'seller'&ndash;&gt;-->
+<!--        <h2><a th:href="@{/reviews}" href="#">리뷰 관리</a></h2>-->
+<!--    </div>-->
+</div>
+</body>
+<script>
+</script>
+
+
+</html>

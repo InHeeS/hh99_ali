@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order List</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+<div class="header">
+    <div class="center">
+        <a th:href="@{/}" href="#">Home</a>
+    </div>
+    <div id="loggedOutButtons">
+        <a href="/auth/user/login-page" class="header-button">로그인</a>
+        <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+        <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+    </div>
+    <div id="loggedInInfo" style="display: none;">
+        <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+        <span id="usernameSpan"></span>
+        <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+    </div>
+</div>
+
+<div style="display: flex;">
+    <!-- Aside Section -->
+    <div th:replace="aside :: aside"></div>
+    <div th:fragment="orders-list">
+        <div class="order-list" style="margin-left: 250px;">
+            <h1>Order list</h1>
+            <table>
+                <thead>
+                <tr>
+                    <th>orderid</th>
+                    <th>Order Quantity</th>
+                    <th>Total price</th>
+                    <th>Product name</th>
+                    <th>Status</th>
+                    <th>Product Photo</th>
+                    <th>Order Date</th>
+                    <th>Seller</th>
+                    <th>Buyer</th>
+                </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                <!-- Data is populated dynamically via AJAX requests. -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Update Status</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    <div class="form-group">
+                        <label><input type="radio" name="status" value="DELIVERING"> DELIVERING</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="radio" name="status" value="DELIVERED"> DELIVERED</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="updateStatus()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/js/basic.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    var Access_Token = localStorage.getItem("Access_Token");
+    var Refresh_Token = localStorage.getItem("Refresh_Token");
+
+    // Order ID variable to store the current order being updated
+    var currentOrderId;
+
+    // Function to set the order ID and open the modal
+    function openStatusModal(orderId) {
+        currentOrderId = orderId;
+        $('#statusModal').modal('show');
+    }
+
+    function closeStatusModal() {
+        $('#statusModal').modal('hide');
+    }
+
+    // Request order list when page loads
+    function loadProducts() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "api/seller/orders");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                var ordersList = response.data;
+                var tableBody = document.getElementById("ordersTableBody");
+                ordersList.forEach(function (order) {
+                    var row = tableBody.insertRow();
+                    row.insertCell(0).textContent = order.id;
+                    row.insertCell(1).textContent = order.qnt;
+                    row.insertCell(2).textContent = order.totalPrice;
+                    row.insertCell(3).textContent = order.productName;
+                    row.insertCell(4).textContent = order.status;
+
+                    var imgCell = row.insertCell(5);
+                    var img = document.createElement("img");
+                    img.src = order.productImg;
+                    img.alt = "Product Image";
+                    img.width = 100; // Adjust image size (can be changed to desired size)
+                    imgCell.appendChild(img);
+
+                    row.insertCell(6).textContent = order.createdAt;
+                    row.insertCell(7).textContent = order.sellerName;
+                    row.insertCell(8).textContent = order.username;
+                    var statusCell = row.insertCell(9);
+                    var button = document.createElement("button");
+                    button.textContent = "Update Status";
+                    button.addEventListener("click", function () {
+                        openStatusModal(order.id);
+                    });
+                    statusCell.appendChild(button);
+                });
+            } else {
+                // error handling
+                console.error("Failed to fetch orders:", xhr.responseText);
+            }
+        };
+        xhr.send();
+    }
+    ;
+
+    function updateStatus() {
+        var form = document.getElementById("statusForm");
+        var newStatus = form.querySelector('input[name="status"]:checked').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", `/api/seller/orders/${currentOrderId}`);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Access_Token", Access_Token);
+        xhr.setRequestHeader("Refresh_Token", Refresh_Token);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // Update the status in the table
+                var statusCell = document.getElementById(`statusCell_${currentOrderId}`);
+                statusCell.textContent = newStatus;
+                console.log("Status updated successfully.");
+
+                // Reload the page only when changing to DELIVERED
+                if (newStatus === "DELIVERED") {
+                    window.location.reload();
+                }
+            } else {
+                console.error("Failed to update status:", xhr.responseText);
+            }
+            // Close the modal regardless of the update result
+            closeStatusModal();
+            // Reset the form within the modal
+            form.reset();
+        };
+        xhr.send(JSON.stringify({"status": newStatus}));
+    }
+    function initializeOnLoad() {
+        loadProducts();
+        let isLoggingOut = false;  // 로그아웃 중인지 확인하는 전역 플래그
+
+        function logout() {
+            isLoggingOut = true;  // 로그아웃 중임을 표시
+            localStorage.removeItem("Access_Token");
+            localStorage.removeItem("Refresh_Token");
+            location.reload();
+        }
+
+        if (isLoggingOut) {
+            return;  // 로그아웃 중일 경우, 나머지 로직을 건너뛴다.
+        }
+
+        const token = localStorage.getItem('Access_Token');
+        const currentPath = window.location.pathname;
+
+        if (!token) {
+            // 토큰이 없는 경우 (비회원)
+            document.getElementById('productManagement').style.display = 'none';
+            document.getElementById('storeManagement').style.display = 'none';
+            document.getElementById('orderManagementLink').style.display = 'none';
+        } else {
+            const decodedToken = atob(token.split('.')[1]);
+            const payload = JSON.parse(decodedToken);
+            const userType = payload.userType;
+
+            if (userType === 'SELLER') {
+                // SELLER인 경우 모든 메뉴가 보임
+                document.getElementById('productManagement').style.display = 'block';
+                document.getElementById('storeManagement').style.display = 'block';
+                document.getElementById('orderManagementLink').setAttribute('href', '/seller3');
+            } else if (userType === 'USER') {
+                // USER인 경우 상품 목록, 주문 관리만 보임
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').setAttribute('href', '/orders');
+            } else {
+                // 그 외 경우 (예: 토큰은 있지만 userType이 SELLER나 USER가 아닌 경우)
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').style.display = 'none';
+            }
+
+            const username = payload.sub;
+
+            const greetingMessage = `[${userType}] ${username}  `;
+            const usernameSpan = document.getElementById('usernameSpan');
+            usernameSpan.textContent = greetingMessage;
+
+            const loggedOutButtons = document.getElementById('loggedOutButtons');
+            loggedOutButtons.style.display = 'none';
+            document.getElementById('loggedInInfo').style.display = 'block';
+        }
+    }
+    window.addEventListener("load", initializeOnLoad);
+</script>
+</body>
+
+</html>

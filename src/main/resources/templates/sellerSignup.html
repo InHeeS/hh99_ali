@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Signup Page</title>
+  <style>
+    body {
+      font-family: 'Arial, sans-serif';
+      background-color: #f0f0f0;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      max-width: 300px;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background-color: #28a745;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<h1>Seller Signup</h1>
+<form id="signupForm" onsubmit="signup(event)">
+  <label for="username">Username:</label>
+  <input type="text" id="username" name="username" required><br>
+
+  <label for="password">Password:</label>
+  <input type="password" id="password" name="password" required><br>
+
+  <label for="storeName">Store Name:</label>
+  <input type="text" id="storeName" name="storeName" required><br>
+
+  <label for="info">Info:</label>
+  <input type="text" id="info" name="info" required><br>
+
+  <button type="submit">Sign Up</button>
+</form>
+
+<script type="text/javascript">
+  function signup(event) {
+    event.preventDefault();
+
+    var username = document.getElementById("username").value;
+    var password = document.getElementById("password").value;
+    var storeName = document.getElementById("storeName").value;
+    var info = document.getElementById("info").value;
+
+    var data = {
+      username: username,
+      password: password,
+      storeName: storeName,
+      info: info
+    };
+
+    var xhr = new XMLHttpRequest(); // XMLHttpRequest 객체 생성
+    xhr.open("POST", "/auth/seller/signup"); // POST 방식으로 /auth/seller/signup URL에 요청
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8"); // 요청 헤더 설정
+    xhr.onload = function () { // 요청에 대한 응답이 왔을 때 호출되는 함수
+      if (xhr.status === 200) { // 정상적으로 응답이 왔을 때
+        alert("판매자 회원가입에 성공하셨습니다.");
+        window.history.back(); // 이전 페이지로 돌아가기
+      } else {
+        var response = JSON.parse(xhr.responseText);
+        alert(response.errorMessage); // 실패 메시지 표시
+      }
+    };
+    xhr.send(JSON.stringify(data));
+  }
+</script>
+</body>
+</html>
