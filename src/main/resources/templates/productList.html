@@ -1,56 +1,454 @@
 <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>Product List</title>
-  <link rel="stylesheet" href="/css/styles.css">
+    <meta charset="UTF-8">
+    <title>Order List</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        /* 주문 목록 테이블 스타일 */
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-top: 20px;
+            text-align: center; /* 가운데 정렬 추가 */
+        }
+
+        .product-table th, .product-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center; /* 가운데 정렬 추가 */
+        }
+
+        .product-table th {
+            background-color: #f2f2f2;
+        }
+
+        .product-table tbody tr:nth-child(odd) {
+            background-color: #f2f2f2;
+        }
+
+        .product-table tbody tr:hover {
+            background-color: #ddd;
+        }
+
+        .product-table th {
+            background-color: #333; /* 어두운 배경 색상 */
+            color: white; /* 흰색 텍스트 색상 */
+        }
+
+        .product-table img {
+            max-width: 50px;
+            height: auto;
+        }
+
+        /* 주문 목록 컨테이너 스타일 */
+        .product-list-container {
+            display: flex;
+            align-items: center;
+        }
+
+        /* 가운데 정렬 스타일 추가 */
+        .order-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close-button {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            display: none;
+        }
+
+        label:hover,
+        label:hover ~ label {
+            color: #ffca08;
+        }
+
+        input[type="radio"]:checked ~ label {
+            color: #ffca08;
+        }
+
+        button[type="submit"] {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .fas.fa-star, .far.fa-star {
+            color: gold;
+            margin-right: 3px;  // 별 사이의 간격 조절
+        }
+    </style>
 </head>
 <body>
-<!-- Header Section -->
 <div class="header">
-  <div class="center">
-    <a th:href="@{/}" href="#">Home</a>
-  </div>
-  <div id="loggedOutButtons">
-    <a href="/auth/user/login-page" class="header-button">로그인</a>
-    <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
-    <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
-  </div>
-  <div id="loggedInInfo" style="display: none;">
-    <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
-    <span id="usernameSpan"></span>
-    <a href="/" class="header-button" onclick="logout()">로그아웃</a>
-  </div>
+    <div class="center">
+        <a th:href="@{/}" href="#">Home</a>
+    </div>
+    <div id="loggedOutButtons">
+        <a href="/auth/user/login-page" class="header-button">로그인</a>
+        <a href="/auth/user/signup-page" class="header-button">유저 회원가입</a>
+        <a href="/auth/seller/signup-page" class="header-button">셀러 회원가입</a>
+    </div>
+    <div id="loggedInInfo" style="display: none;">
+        <!-- username과 로그아웃 버튼을 같은 줄에 표시하기 위해 span 요소 사용 -->
+        <span id="usernameSpan"></span>
+        <a href="/" class="header-button" onclick="logout()">로그아웃</a>
+    </div>
 </div>
 
-<div style="display: flex;">
-  <!-- Aside Section -->
-  <div th:replace="aside :: aside"></div>
-  <div th:fragment="product-list">
-<div class="product-list">
-  <h1>상품 목록</h1>
-  <table>
-    <thead>
-    <tr>
-      <th>상품 이름</th>
-      <th>가격</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="product : ${products}">
-      <td th:text="${product.name}">상품 이름</td>
-      <td th:text="${product.price}">가격</td>
-    </tr>
-    </tbody>
-  </table>
-  <div class="paging">
-<!--    <a th:href="@{/product?page=0}" href="#">처음</a>-->
-<!--    <a th:href="@{{/product?page=${page-1}}}" href="#">이전</a>-->
-<!--    <a th:href="@{{/product?page=${page+1}}}" href="#">다음</a>-->
-<!--    <a th:href="@{/product?page=last}" href="#">마지막</a>-->
-  </div>
+<div class="order-list-container">
+    <div th:replace="aside :: aside"></div>
+    <div class="order-list">
+        <h1>상품 목록</h1>
+        <!-- 검색창 추가 시작 -->
+        <div class="search-container">
+            <input type="text" id="productSearchInput" placeholder="상품 이름으로 검색...">
+            <button onclick="searchProducts()">검색</button>
+        </div>
+        <!-- 검색창 추가 끝 -->
+        <table class="product-table">
+            <thead>
+            <tr>
+                <th>상품 번호</th>
+                <th>상품 이미지</th>
+                <th>상품 이름</th>
+                <th>상품 가격</th>
+                <th>상품 재고</th>
+            </tr>
+            </thead>
+            <tbody id="productTableBody">
+            <!-- 데이터는 AJAX 요청을 통해 동적으로 채워집니다. -->
+            </tbody>
+        </table>
+    </div>
 </div>
+<div id="reviewModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeReviewModal()">&times;</span>
+        <h3>상품 리뷰</h3>
+        <table class="review-table">
+            <thead>
+            <tr>
+                <th>Rating</th>
+                <th>Comment</th>
+            </tr>
+            </thead>
+            <tbody id="reviewTableBody">
+            <!-- 여기에 리뷰 내용이 동적으로 채워집니다. -->
+            </tbody>
+        </table>
+    </div>
 </div>
-  </div>
-</body>
-<script src="/js/basic.js"></script>
-</html>
+<script>
+<!--    모달관련-->
+// 모달창을 보여주는 함수
+function showProductModal(product) {
+    // 리뷰 데이터를 가져옵니다.
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", `/api/product/${product.productId}/reviews`, true);
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const reviews = JSON.parse(xhr.responseText);
+            const reviewTableBody = document.getElementById("reviewTableBody");
+
+            // 기존에 표시된 리뷰 데이터를 초기화합니다.
+            reviewTableBody.innerHTML = '';
+
+            reviews.forEach(review => {
+                let row = reviewTableBody.insertRow();
+
+                // 별점 표시
+                const ratingCell = row.insertCell(0);
+                for (let i = 0; i < 5; i++) {
+                    const starIcon = document.createElement("i");
+                    if (i < review.rating) {
+                        starIcon.className = "fas fa-star";  // 꽉 찬 별
+                    } else {
+                        starIcon.className = "far fa-star";  // 빈 별
+                    }
+                    ratingCell.appendChild(starIcon);
+                }
+
+                row.insertCell(1).textContent = review.comment;
+            });
+
+            // 모달창을 표시합니다.
+            const reviewModal = document.getElementById('reviewModal');
+            reviewModal.style.display = 'block';
+        }
+    };
+
+    xhr.send();
+}
+
+function closeReviewModal() {
+    const reviewModal = document.getElementById('reviewModal');
+    reviewModal.style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const reviewModal = document.getElementById('reviewModal');
+    if (event.target == reviewModal) {
+        reviewModal.style.display = "none";
+    }
+}
+// 검색창
+function searchProducts() {
+    const keyword = document.getElementById("productSearchInput").value;
+
+    if (!keyword.trim()) {
+        alert("검색어를 입력하세요.");
+        return;
+    }
+
+    const endpoint = `/api/seller/products?keyword=${encodeURIComponent(keyword)}`;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", endpoint);
+
+    // 토큰들을 요청 헤더에 추가 (이전 코드와 동일)
+    const access_token = localStorage.getItem("Access_Token");
+    const refresh_token = localStorage.getItem("Refresh_Token");
+    if (access_token) {
+        xhr.setRequestHeader("Access_Token", access_token);
+    }
+    if (refresh_token) {
+        xhr.setRequestHeader("Refresh_Token", refresh_token);
+    }
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const products = JSON.parse(xhr.responseText);
+            const tableBody = document.getElementById("productTableBody");
+            tableBody.innerHTML = '';  // 테이블 내용 초기화
+
+            products.forEach(product => {
+                let row = tableBody.insertRow();
+
+                row.insertCell(0).textContent = product.productId;
+
+                const imgCell = row.insertCell(1);
+                const img = document.createElement("img");
+                img.src = product.imgUrl;
+                img.alt = product.productName;
+                imgCell.appendChild(img);
+
+                const productNameCell = row.insertCell(2);
+                productNameCell.textContent = product.productName;
+                productNameCell.style.cursor = 'pointer';
+                productNameCell.onclick = function() {
+                    showProductModal(product);
+                };
+
+                row.insertCell(3).textContent = product.price;
+                row.insertCell(4).textContent = product.stock;
+
+                const actionCell = row.insertCell(5);
+                if (userType === "USER") {
+                    const buyButton = document.createElement("button");
+                    buyButton.textContent = "Buy";
+                    buyButton.onclick = function() {
+                        orderProduct(product.productId);
+                    };
+                    actionCell.appendChild(buyButton);
+                }
+            });
+        } else {
+            alert("검색 중 오류가 발생했습니다.");
+        }
+    };
+
+    xhr.send();
+}
+
+    // 여기까지
+    const Access_Token = localStorage.getItem("Access_Token");
+    let userType = null;
+
+    if (Access_Token) {
+        const decodedToken = atob(Access_Token.split('.')[1]);
+        const payload = JSON.parse(decodedToken);
+        userType = payload.userType;
+    }
+
+    function orderProduct(productId) {
+        const qnt = parseInt(prompt("구매할 수량을 입력하세요:", "1"));
+        if (isNaN(qnt) || qnt <= 0) {
+            alert("올바른 수량을 입력하세요.");
+            return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        const endpoint = "/api/product/order";
+        xhr.open("POST", endpoint, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        // 토큰들을 요청 헤더에 추가
+        const access_token = localStorage.getItem("Access_Token");
+        const refresh_token = localStorage.getItem("Refresh_Token");
+        if (access_token) {
+            xhr.setRequestHeader("Access_Token", access_token);
+        }
+        if (refresh_token) {
+            xhr.setRequestHeader("Refresh_Token", refresh_token);
+        }
+
+        xhr.onreadystatechange = function() {
+            if (this.readyState == 4) {
+                if (this.status == 200) {
+                    alert("상품 구매 성공!");
+                    location.reload();  // 페이지를 새로고침합니다.
+                } else {
+                    alert("상품 구매 실패: " + this.responseText);
+                }
+            }
+        };
+
+        xhr.send(JSON.stringify({ productId, qnt }));
+    }
+
+function loadProducts() {
+    let endpoint;
+
+    if (userType === "SELLER") {
+        endpoint = "/api/products/seller";
+    } else {
+        endpoint = "/api/products";
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", endpoint);
+
+    // 토큰들을 요청 헤더에 추가
+    const access_token = localStorage.getItem("Access_Token");
+    const refresh_token = localStorage.getItem("Refresh_Token");
+    if (access_token) {
+        xhr.setRequestHeader("Access_Token", access_token);
+    }
+    if (refresh_token) {
+        xhr.setRequestHeader("Refresh_Token", refresh_token);
+    }
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const products = JSON.parse(xhr.responseText);
+            const tableBody = document.getElementById("productTableBody");
+
+            products.forEach(product => {
+                let row = tableBody.insertRow();
+
+                row.insertCell(0).textContent = product.productId;
+
+                const imgCell = row.insertCell(1);
+                const img = document.createElement("img");
+                img.src = product.imgUrl;
+                img.alt = product.productName;
+                imgCell.appendChild(img);
+
+                const productNameCell = row.insertCell(2);
+                productNameCell.textContent = product.productName;
+                productNameCell.style.cursor = 'pointer';  // 마우스 커서를 포인터로 변경
+                productNameCell.onclick = function() {
+                    showProductModal(product);  // 상품 이름 셀 클릭 시 모달창을 보여줍니다.
+                };
+
+                row.insertCell(3).textContent = product.price;
+                row.insertCell(4).textContent = product.stock;
+
+                const actionCell = row.insertCell(5);
+                if (userType === "USER") {
+                    const buyButton = document.createElement("button");
+                    buyButton.textContent = "Buy";
+                    buyButton.onclick = function() {
+                        orderProduct(product.productId);
+                    };
+                    actionCell.appendChild(buyButton);
+                }
+            });
+        }
+    };
+    xhr.send();
+}
+
+    function logout() {
+        localStorage.removeItem("Access_Token");
+        localStorage.removeItem("Refresh_Token");
+        location.reload();
+    }
+
+    function initializeOnLoad() {
+        loadProducts();
+
+        const token = localStorage.getItem('Access_Token');
+        const currentPath = window.location.pathname;
+
+        if (!token) {
+            document.getElementById('productManagement').style.display = 'none';
+            document.getElementById('storeManagement').style.display = 'none';
+            document.getElementById('orderManagementLink').style.display = 'none';
+        } else {
+            const decodedToken = atob(token.split('.')[1]);
+            const payload = JSON.parse(decodedToken);
+            const userType = payload.userType;
+
+            if (userType === 'SELLER') {
+                document.getElementById('productManagement').style.display = 'block';
+                document.getElementById('storeManagement').style.display = 'block';
+                document.getElementById('orderManagementLink').setAttribute('href', '/seller3');
+            } else if (userType === 'USER') {
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').setAttribute('href', '/orders');
+            } else {
+                document.getElementById('productManagement').style.display = 'none';
+                document.getElementById('storeManagement').style.display = 'none';
+                document.getElementById('orderManagementLink').style.display = 'none';
+            }
+
+            const username = payload.sub;
+            const greetingMessage = `[${userType}] ${username}  `;
+            const usernameSpan = document.getElementById('usernameSpan');
+            usernameSpan.textContent = greetingMessage;
+
+            const loggedOutButtons = document.getElementById('loggedOutButtons');
+            loggedOutButtons.style.display = 'none';
+            document.getElementById('loggedInInfo').style.display = 'block';
+        }
+    }
+
+    window.addEventListener("load", initializeOnLoad);
+</script>

@@ -21,7 +21,7 @@ public class AsideController {
 
     @GetMapping("/product")
     public String showProductList(Model model) {
-        List<Product> products = productRepository.findAll();
+//        List<Product> products = productRepository.findAll();
 
 //        model.addAttribute("products", products);
 //        model.addAttribute("page", page);

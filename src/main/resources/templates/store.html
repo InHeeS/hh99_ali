@@ -288,10 +288,11 @@
         xhr.onload = function () {
             if (xhr.status === 201) {
                 // Product created successfully
-                console.log("Product created successfully:", xhr.responseText);
+                alert("상품 등록 성공!");
+                location.reload();  // 페이지를 새로고침합니다.
             } else {
                 // Handle error
-                console.error("Failed to create product:", xhr.responseText);
+                alert("상품 등록 실패: " + this.responseText);
             }
         };
         xhr.send(formData);
