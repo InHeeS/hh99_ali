@@ -1,27 +1,30 @@
 package com.example.ali.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.ToString;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.index.Indexed;
+
+import java.util.UUID;
+
+import static com.example.ali.jwt.JwtUtil.REFRESH_TIME;
 
 @Getter
-@Setter
-@Entity
-@NoArgsConstructor
+@ToString
+@NoArgsConstructor  // 기본 생성자 추가
+@AllArgsConstructor
+@RedisHash(value = "refreshToken", timeToLive = REFRESH_TIME)
 public class RefreshToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @NotBlank
     private String refreshToken;
-    @NotBlank
+
+    @Indexed
     private String username;
 
     public RefreshToken(String token, String username) {

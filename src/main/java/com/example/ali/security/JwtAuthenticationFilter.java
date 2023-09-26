@@ -120,6 +120,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUsername(username);
 
+        System.out.println("값 가져오는지?" + refreshToken);
+
         if(refreshToken.isPresent()) {
             refreshTokenRepository.save(refreshToken.get().updateToken(tokenDto.getRefreshToken()));
         } else {
