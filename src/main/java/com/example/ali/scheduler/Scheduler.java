@@ -26,7 +26,7 @@ public class Scheduler {
     private final ReviewRepository reviewRepository;
 
     @Transactional
-    @Scheduled(cron = "*/10 * * * * *") // 1시간 모든 유저의 modified_at 체크
+    @Scheduled(cron = "0 0 * * * *") // 1시간 모든 유저의 modified_at 체크
     public void signEscape() {
 
         List<User> userList = userRepository.findAll();
@@ -35,7 +35,7 @@ public class Scheduler {
             Duration duration = Duration.between(user.getUserWallet().getUpdatedAt(), LocalDateTime.now());
             long time = duration.getSeconds();
 
-            if (time > 1L) {
+            if (time > 600000L) {
 
                 List<Orders> ordersList = ordersRepository.findAllByUser(user);
 
