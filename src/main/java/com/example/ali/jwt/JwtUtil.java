@@ -137,7 +137,7 @@ public class JwtUtil {
     public Boolean refreshTokenValidation(String token) {
 
         // 1차 토큰 검증
-        if(!validateToken(token)) return false;
+        if(!validateToken(token))return false;
 
         // DB에 저장한 토큰 비교
         Optional<RefreshToken> refreshTokenOpt = refreshTokenRepository.findByUsername(getUsernameFromToken(token));
