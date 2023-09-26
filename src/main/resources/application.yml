@@ -37,6 +37,11 @@ spring:
             enable: true
   thymeleaf:
     cache: false
+  cache:
+    redis:
+      port: '6379'
+      host: localhost
+    type: redis
 
 jwt:
   secret:

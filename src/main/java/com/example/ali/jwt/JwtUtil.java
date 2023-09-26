@@ -3,6 +3,7 @@ package com.example.ali.jwt;
 import com.example.ali.dto.TokenDto;
 import com.example.ali.entity.RefreshToken;
 import com.example.ali.repository.RefreshTokenRepository;
+import com.example.ali.service.RefreshTokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -40,8 +41,8 @@ public class JwtUtil {
     // Token 식별자
     public static final String BEARER_PREFIX = "Bearer ";
     // 토큰 만료시간
-    private final long ACCESS_TIME = 60 * 60 * 1000L; // 1시간
-    private final long REFRESH_TIME  = 60 * 60 * 1000L * 24; // 1일
+    private final long ACCESS_TIME = 1000L; // 1시간
+    public static final long REFRESH_TIME  = 60 * 60 * 1000L; // 60분
 
     public static final String ACCESS_TOKEN = "Access_Token";
     public static final String REFRESH_TOKEN = "Refresh_Token";
@@ -57,6 +58,7 @@ public class JwtUtil {
     public static final Logger logger = LoggerFactory.getLogger("JWT 관련 로그");
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private RefreshTokenService refreshTokenService;
 
     // 생성자 호출 뒤에 실행, 요청의 반복 호출 방지
     @PostConstruct
@@ -135,12 +137,23 @@ public class JwtUtil {
     public Boolean refreshTokenValidation(String token) {
 
         // 1차 토큰 검증
-        if(!validateToken(token)) return false;
+        if(!validateToken(token))return false;
 
         // DB에 저장한 토큰 비교
-        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUsername(getUsernameFromToken(token));
+        Optional<RefreshToken> refreshTokenOpt = refreshTokenRepository.findByUsername(getUsernameFromToken(token));
 
-        return refreshToken.isPresent() && token.equals(refreshToken.get().getRefreshToken());
+        if (refreshTokenOpt.isPresent()) {
+            String storedRefreshTokenValue = refreshTokenOpt.get().getRefreshToken();
+            System.out.println("저장된 refreshToken의 값: " + storedRefreshTokenValue);
+
+            // 토큰 값이 일치하는지 확인하고 싶다면 이렇게 비교하면 됩니다.
+            return token.equals(storedRefreshTokenValue);
+        } else {
+            System.out.println("refreshToken을 찾을 수 없습니다.");
+            return false;
+        }
+
+//        return token.equals(refreshToken.get().getRefreshToken());
     }
 
 

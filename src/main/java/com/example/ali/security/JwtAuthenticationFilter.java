@@ -13,7 +13,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Optional;
+import java.util.*;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,8 +28,6 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j(topic = "로그인 및 JWT 생성")
@@ -120,11 +119,16 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         Optional<RefreshToken> refreshToken = refreshTokenRepository.findByUsername(username);
 
+        System.out.println("값 가져오는지?" + refreshToken);
+
         if(refreshToken.isPresent()) {
-            refreshTokenRepository.save(refreshToken.get().updateToken(tokenDto.getRefreshToken()));
+            refreshTokenRepository.save(refreshToken.get());
+//            refreshTokenRepository.save(refreshToken.get().updateToken(tokenDto.getRefreshToken()));
         } else {
-            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(),username);
-            refreshTokenRepository.save(new RefreshToken(tokenDto.getRefreshToken(),username));
+            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(), username);
+            refreshTokenRepository.save(newRefreshToken);
+//            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(),username);
+//            refreshTokenRepository.save(new RefreshToken(tokenDto.getRefreshToken(),username));
         }
         setHeader(response, tokenDto);
 

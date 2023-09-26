@@ -45,6 +45,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         if(!jwtUtil.validateToken(accessToken)){
             String refreshToken = jwtUtil.getHeaderToken(req, REFRESH);
             boolean isRefreshToken = jwtUtil.refreshTokenValidation(refreshToken);
+            System.out.println(refreshToken); // eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqaW5oZXlzcyIsImF1dGgiOiJFbXB0eSIsInVzZXJUeXBlIjoiU0VMTEVSIiwiZXhwIjoxNjk1NzIzMDE4LCJpYXQiOjE2OTU3MTk0MTh9.KHnstJSuCnKCf19WPvpO6bKrmqGOuQ5ybkb4Nf56C2s
+            System.out.println("isRefreshToken = " + isRefreshToken); // 옵셔널 엠티
 
             if (!isRefreshToken) {
                 throw new NullPointerException("Refresh Token 만료");
