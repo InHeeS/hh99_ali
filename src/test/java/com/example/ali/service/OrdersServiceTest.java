@@ -6,166 +6,126 @@ import com.example.ali.repository.OrdersRepository;
 import com.example.ali.repository.ProductRepository;
 import com.example.ali.repository.SellerRepository;
 import com.example.ali.repository.UserRepository;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 
-// Mock 사용을 위해 설정
 @ExtendWith(MockitoExtension.class)
 class OrdersServiceTest {
-
     @InjectMocks
-    private OrdersService ordersService;
+    OrdersService ordersService;
 
     @Mock
-    private SellerRepository sellerRepository;
+    OrdersRepository ordersRepository;
 
     @Mock
-    private OrdersRepository ordersRepository;
-
+    ProductRepository productRepository;
     @Mock
-    private ProductRepository productRepository;
-
+    SellerRepository sellerRepository;
     @Mock
-    private UserRepository userRepository;
+    UserRepository userRepository;
+    
+    @Nested
+    @DisplayName("상품 주문")
+    class SuccessCase {
+        @Mock User user;
+        @Mock UserWallet userWallet;
+        @Mock Seller seller;
+        @Mock SellerWallet sellerWallet;
 
+        @Mock Product product;
+        @Mock ProductStock productStock;
 
+        @Test
+        void 주문_성공() {
+            //given
+            Long productPrice = 1000L;
+            Long stock = 1000L;
+            Long userPoint = 100000L;
+            Long qnt = 20L;
 
+            OrderRequestDto requestDto = new OrderRequestDto(1L, qnt);
+            UserWallet wallet = new UserWallet(userPoint);
 
-    @Test
-    @DisplayName("상품 주문 - 성공")
-    void orderproduct() {
+            //when
+            //Product 관련
+            when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
+            when(product.getProductStock()).thenReturn(productStock);
+            when(productStock.getStock()).thenReturn(stock);
+            when(product.getPrice()).thenReturn(productPrice);
+            when(product.getSeller()).thenReturn(seller);
+            when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
 
-        //given
+            //User 관련
+            when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+            when(user.getUserWallet()).thenReturn(wallet);
 
-        //seller 생성
-        SellerSignupRequestDto sellerSignupRequestDto =
-                new SellerSignupRequestDto("셀러", "123", "셀러상점", "셀러의상점이다");
-        SellerWallet sellerWallet = new SellerWallet();
-        Seller seller = new Seller(1L, sellerSignupRequestDto, "123", sellerWallet);
+            //then
+            MessageDataResponseDto result = ordersService.orderProduct(requestDto, user);
+            OrdersResponseDto resultDto =(OrdersResponseDto) result.getData();
 
-        //user 생성
-        UserSignupRequestDto userSignupRequestDto = new UserSignupRequestDto("구매자", "321", "user@user");
-        UserWallet userWallet = new UserWallet();
-        User user = new User(1L, userSignupRequestDto, "321", userWallet);
+            verify(productStock, times(1)).changeStock(anyLong());
+            verify(ordersRepository, times(1)).save(any(Orders.class));
 
-        //product 생성
-        ProductRequestDto productRequestDto = new ProductRequestDto("축구공", 100L, 100L, "둥글함");
-        Product product = new Product(1L, productRequestDto, seller, "https://pa/");
-        ProductStock productStock = new ProductStock(productRequestDto.getStock(), product);
-        product.setProductStock(productStock);
+            assertThat(resultDto.getQnt()).isEqualTo(qnt);
+            assertThat(resultDto.getTotalPrice()).isEqualTo(Math.multiplyExact(productPrice,qnt));
+            assertThat(wallet.getPoint()).isEqualTo(Math.subtractExact(userPoint, Math.multiplyExact(productPrice,qnt)));
+        }
+        @Test
+        void 주문_실패_재고부족() {
+            Long stock = 100L;
+            Long qnt = 1000L;
+            OrderRequestDto requestDto = new OrderRequestDto(1L, qnt);
 
-        //주문 생성
-        OrderRequestDto orderRequestDto = new OrderRequestDto(1L, 20L);
-        Orders orders = new Orders(1L, orderRequestDto, user, product);
+            when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
+            when(product.getProductStock()).thenReturn(productStock);
+            when(productStock.getStock()).thenReturn(stock);
+            //user 관련
+            when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
 
+            assertThatThrownBy(() -> ordersService.orderProduct(requestDto, user))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("재고가 부족합니다.");
+            verify(productStock, times(0)).changeStock(anyLong());
+        }
 
-        //when
-        when(productRepository.findById(any(Long.class))).thenReturn(Optional.of(product));
-        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(user));
-        when(ordersRepository.save(any(Orders.class))).thenReturn(orders);
+        @Test
+        void 주문_실패_소지금부족() {
+            //given
+            Long price = 1000L;
+            Long stock = 100L;
 
-        MessageDataResponseDto result = ordersService.orderProduct(orderRequestDto,user);
-        OrdersResponseDto ordersResponseDto = (OrdersResponseDto) result.getData();
+            Long point = 100L;
+            Long qnt = 1L;
+            OrderRequestDto requestDto = new OrderRequestDto(1L, qnt);
 
+            when(productRepository.findById(anyLong())).thenReturn(Optional.of(product));
+            when(product.getProductStock()).thenReturn(productStock);
+            when(product.getPrice()).thenReturn(price);
+            when(productStock.getStock()).thenReturn(stock);
 
-        //then
-        Assertions.assertThat(ordersResponseDto.getQnt()).isEqualTo(20);
-        Assertions.assertThat(ordersResponseDto.getTotalPrice()).isEqualTo(20*100);
-        Assertions.assertThat(ordersResponseDto.getProductName()).isEqualTo("축구공");
-        Assertions.assertThat(ordersResponseDto.getSellerName()).isEqualTo("셀러");
-        Assertions.assertThat(ordersResponseDto.getUsername()).isEqualTo("구매자");
-        Assertions.assertThat(product.getProductStock().getStock()).isEqualTo(80);
+            // user
+            when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+            when(user.getUserWallet()).thenReturn(userWallet);
+            when(userWallet.getPoint()).thenReturn(point);
+
+            //then
+            assertThatThrownBy(() -> ordersService.orderProduct(requestDto, user))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("소지금이 부족합니다.");
+            verify(userWallet, times(0)).changePoint(anyLong());
+        }
     }
-
-    @Test
-    @DisplayName("상품 주문 - 실패 - 재고 부족")
-    void orderproduct2() {
-
-        //given
-
-        //seller 생성
-        SellerSignupRequestDto sellerSignupRequestDto =
-                new SellerSignupRequestDto("셀러", "123", "셀러상점", "셀러의상점이다");
-        SellerWallet sellerWallet = new SellerWallet();
-        Seller seller = new Seller(1L, sellerSignupRequestDto, "123", sellerWallet);
-
-        //user 생성
-        UserSignupRequestDto userSignupRequestDto = new UserSignupRequestDto("구매자", "321", "user@user");
-        UserWallet userWallet = new UserWallet();
-        User user = new User(1L, userSignupRequestDto, "321", userWallet);
-
-        //product 생성
-        ProductRequestDto productRequestDto = new ProductRequestDto("축구공", 100L, 100L, "둥글함");
-        Product product = new Product(1L, productRequestDto, seller, "https://pa/");
-        ProductStock productStock = new ProductStock(productRequestDto.getStock(), product);
-        product.setProductStock(productStock);
-
-        //주문 생성
-        OrderRequestDto orderRequestDto = new OrderRequestDto(1L, 2000L);
-        Orders orders = new Orders(1L, orderRequestDto, user, product);
-
-
-        //when
-        when(productRepository.findById(any(Long.class))).thenReturn(Optional.of(product));
-        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(user));
-
-        Assertions.assertThatThrownBy(() -> ordersService.orderProduct(orderRequestDto, user))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("재고가 부족합니다.");
-    }
-
-
-    @Test
-    @DisplayName("상품 주문 - 실패 - 소지금부족")
-    void orderproduct3() {
-
-        //given
-
-        //seller 생성
-        SellerSignupRequestDto sellerSignupRequestDto =
-                new SellerSignupRequestDto("셀러", "123", "셀러상점", "셀러의상점이다");
-        SellerWallet sellerWallet = new SellerWallet();
-        Seller seller = new Seller(1L, sellerSignupRequestDto, "123", sellerWallet);
-
-        //user 생성
-        UserSignupRequestDto userSignupRequestDto = new UserSignupRequestDto("구매자", "321", "user@user");
-        UserWallet userWallet = new UserWallet();
-        User user = new User(1L, userSignupRequestDto, "321", userWallet);
-
-        //product 생성
-        ProductRequestDto productRequestDto = new ProductRequestDto("축구공", 10000000L, 100L, "둥글함");
-        Product product = new Product(1L, productRequestDto, seller, "https://pa/");
-        ProductStock productStock = new ProductStock(productRequestDto.getStock(), product);
-        product.setProductStock(productStock);
-
-        //주문 생성
-        OrderRequestDto orderRequestDto = new OrderRequestDto(1L, 20L);
-        Orders orders = new Orders(1L, orderRequestDto, user, product);
-
-
-        //when
-        when(productRepository.findById(any(Long.class))).thenReturn(Optional.of(product));
-        when(userRepository.findById(any(Long.class))).thenReturn(Optional.of(user));
-
-        Assertions.assertThatThrownBy(() -> ordersService.orderProduct(orderRequestDto, user))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("소지금이 부족합니다.");
-    }
-
 }

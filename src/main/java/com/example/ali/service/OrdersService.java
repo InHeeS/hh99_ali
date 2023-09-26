@@ -23,9 +23,6 @@ public class OrdersService {
     private final OrdersRepository ordersRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final ReviewRepository reviewRepository;
-
-
 
     public MessageDataResponseDto getReview(Long orderId) {
         Orders orders = ordersRepository.findById(orderId).orElseThrow(() ->
@@ -43,11 +40,11 @@ public class OrdersService {
         //구매 금액 선언
         Long totalPrice = orderRequestDto.getQnt() * product.getPrice();
         // 재고 확인
-        if(!(product.getProductStock().getStock() > orderRequestDto.getQnt())) {
+        if(product.getProductStock().getStock() < orderRequestDto.getQnt()) {
             throw new IllegalArgumentException("재고가 부족합니다.");
         }
         // 유저 소지금 확인
-        if(!(user.getUserWallet().getPoint() > totalPrice)) {
+        if(totalPrice > user.getUserWallet().getPoint()) {
             throw new IllegalArgumentException("소지금이 부족합니다.");
         }
         // 재고 변경

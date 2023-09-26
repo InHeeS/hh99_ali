@@ -9,217 +9,227 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
-    @InjectMocks
-    ReviewService service;
     @Mock
     ReviewRepository reviewRepository;
 
     @Mock
-    OrdersRepository ordersRepository;
-
-    @Mock
     ProductRepository productRepository;
 
-    String comment = "comment";
-    Integer rating = 3;
-
     @Mock
-    User user = new User(1L, new UserSignupRequestDto("바보", "1234",
-            "123@123"), "1234", new UserWallet());
-    User user2 = new User(1L, new UserSignupRequestDto("바보2", "1234",
-            "123@1232"), "12342", new UserWallet());
+    OrdersRepository ordersRepository;
 
-    @Mock
-    Seller seller = new Seller(
-            1L, new SellerSignupRequestDto("셀러", "1234", "셀러스토어", "스토어입니다"),
-            "1234", new SellerWallet());
-
-    @Mock
-    Product product = new Product(1L, new ProductRequestDto("축구공", 1000L, 999L, "축구공이다"),
-            seller, "http://si");
-
-    @Mock
-    Orders order = new Orders(1L, new OrderRequestDto(1L, 10L), user, product);
+    @InjectMocks
+    ReviewService reviewService;
 
     @Nested
-    @DisplayName("댓글 생성")
-    class CreateReview {
+    @DisplayName("리뷰 성공 케이스")
+    class SuccessCase {
+        @Mock
+        Orders order;
 
+        @Mock
+        User user;
 
-
+        ReviewRequestDto originReviewDto = new ReviewRequestDto(1L, "this is comment", 1);
+        Review review;
+        @BeforeEach()
+        void  beforeEach() {
+            review = new Review(originReviewDto, order);
+        }
         @Test
-        @DisplayName("[201] 성공 케이스")
-        void createReview() {
-
-            Review review = new Review(1L, comment, rating, null, order);
-
+        void 생성_성공() {
             //given
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, comment, rating);
 
-            // when
+            //when
+            when(ordersRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+            when(order.getUser()).thenReturn(user);
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.empty());
             when(reviewRepository.save(any(Review.class))).thenReturn(review);
-            when(reviewRepository.findByOrders_Id(any(Long.class))).thenReturn(Optional.empty());
-            when(ordersRepository.findById(any(Long.class))).thenReturn(Optional.ofNullable(order));
+
+            ReviewResponseDto result = reviewService.createReview(originReviewDto,user);
+            //then
+            verify(reviewRepository, times(1)).save(any(Review.class));// save가 1번 실행되어야 한다.
+
+            assertThat(result.getComment()).isEqualTo(originReviewDto.getComment());
+            assertThat(result.getRating()).isEqualTo(originReviewDto.getRating());
+        }
+
+        @Test
+        void 변경_성공() {
+            //given
+            String editedText = "edited";
+            Integer editedRating  = 2;
+            ReviewRequestDto dto = new ReviewRequestDto(1L, editedText, editedRating);
+            Review originReview = new Review(originReviewDto, order);
+
+            //when
+            when(reviewRepository.findByOrders_Id(1L)).thenReturn(Optional.of(originReview));
             when(order.getUser()).thenReturn(user);
 
             //then
-            ReviewResponseDto result = service.createReview(requestDto, user);
-            assertThat(result.getComment()).isEqualTo(review.getComment());
-            assertThat(result.getRating()).isEqualTo(review.getRating());
+            ReviewResponseDto result = reviewService.updateReview(dto, user);
+
+            assertThat(result.getComment()).isEqualTo(editedText);
+            assertThat(result.getRating()).isEqualTo(editedRating);
         }
 
         @Test
-        @DisplayName("실패 케이스 - 주문 없음")
-        void createReview_fail1() {
-
+        void 삭제_성공() {
             //given
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, comment, rating);
-            //when
-            when(ordersRepository.findById(any(Long.class))).thenReturn(Optional.empty());
-            //then
-            assertThrows(NullPointerException.class, () -> {
-                service.createReview(requestDto, new User());
-            });
-        }
-
-        @Test
-        @DisplayName("실패 케이스 - 작성 권한 없음")
-        void createReview_fail2() {
-
-            //given
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, comment, rating);
-            Optional<Orders> optionalOrders = Optional.of(order);
-
-            //when
-            when(ordersRepository.findById(any(Long.class))).thenReturn(optionalOrders);
-            when(order.getUser()).thenReturn(user);
-
-            //then
-            assertThrows(IllegalArgumentException.class, () -> {
-                service.createReview(requestDto, user2);
-            });
-        }
-    }
-
-    @Nested()
-    @DisplayName("리뷰 업데이트")
-    class UpdateReview {
-
-        @Test
-        @DisplayName("리뷰 내용 변경 성공")
-        void update_success () {
-            // given
-            String changedComment = "changedComment";
-            Integer changedRating = 3;
-
-            Review review = new Review(1L, comment, rating, null, order); // 일부 데이터 Mock 주입 가능
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, changedComment, changedRating);
-
-            //when
-            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.of(review));
-            when(order.getUser()).thenReturn(user);
-
-            ReviewResponseDto result = service.updateReview(requestDto, user);
-
-            //then
-            assertThat(result.getComment()).isEqualTo(changedComment);
-            assertThat(result.getRating()).isEqualTo(changedRating);
-        }
-        @Test
-        @DisplayName("싪패 - 리뷰 존재 X")
-        void update_fail1() {
-            //given
-            String changedComment = "changedComment";
-            Integer changedRating = 3;
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, changedComment, changedRating);
-
-            //when
-            when(reviewRepository.findByOrders_Id(1L)).thenReturn(Optional.empty());
-
-            //then
-            assertThrows(NullPointerException.class, () -> {
-                service.updateReview(requestDto, user);
-            });
-        }
-
-        @Test
-        @DisplayName("실패 - 권한 없는 유저")
-        void update_fail2() {
-            //given
-
-            Review review = new Review(1L, comment, rating, null, order); // 일부 데이터 Mock 주입 가능
-            ReviewRequestDto requestDto = new ReviewRequestDto(1L, "아무거나", 1);
+            String successMessage = "삭제 성공";
 
             //when
             when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.of(review));
             when(order.getUser()).thenReturn(user);
 
             //then
-            assertThrows(IllegalArgumentException.class, () -> {
-                service.updateReview(requestDto, user2);
-            });
+            MessageResponseDto result = reviewService.deleteReview(anyLong(), user);
+
+            verify(reviewRepository, times(1)).delete(any(Review.class));
+            assertThat(result.getMsg()).isEqualTo(successMessage);
         }
     }
+
     @Nested
-    @DisplayName("리뷰 삭제")
-    class DeleteReview {
-
-        @Test
-        @DisplayName("[200] 성공 케이스")
-        void deleteReview() {
-            //given
-            Review review = new Review(1L, comment, rating, null, order); // 일부 데이터 Mock 주입 가능
-
-            //when
-            when(reviewRepository.findByOrders_Id(1L)).thenReturn(Optional.of(review));
-            when(order.getUser()).thenReturn(user);
-
-            MessageResponseDto result = service.deleteReview(1L, user);
-
-            //then
-            assertThat(result.getMsg()).isEqualTo("삭제 성공");
+    @DisplayName("리뷰 실패 케이스")
+    class FailCase {
+        @Mock
+        Orders order;
+        @Mock
+        User user;
+        ReviewRequestDto requestDto = new ReviewRequestDto(1L, "this is comment", 1);
+        Review review;
+        @BeforeEach()
+        void beforeEach() {
+            review = new Review(requestDto, order);
         }
 
         @Test
-        @DisplayName("리뷰 없음 -> 실패")
-        void delete_fail1() {
+        void 생성_주문건없음() {
             //given
-            Review review = new Review(1L, comment, rating, null, order); // 일부 데이터 Mock 주입 가능
 
             //when
-            when(reviewRepository.findByOrders_Id(1L)).thenReturn(Optional.empty());
+            when(ordersRepository.findById(anyLong())).thenReturn(Optional.empty());
 
             //then
             assertThrows(NullPointerException.class, () -> {
-                service.deleteReview(1L, user);
+                reviewService.createReview(requestDto, user);
+            });
+            verify(ordersRepository, times(1)).findById(anyLong());
+        }
+
+        @Test
+        void 생성_작성권한없음() {
+            //given
+            User unAuthorizedUser = new User();
+            //when
+            when(ordersRepository.findById(any(Long.class))).thenReturn(Optional.of(order));
+            when(order.getUser()).thenReturn(user);
+
+            // then
+            assertThrows(IllegalArgumentException.class, ()-> {
+                reviewService.createReview(requestDto, unAuthorizedUser);
             });
         }
 
         @Test
-        @DisplayName("권한 없음 -> 실패")
-        void delete_fail2() {
+        void 생성_작성한리뷰존재() {
             //given
-            Review review = new Review(1L, comment, rating, null, order); // 일부 데이터 Mock 주입 가능
 
             //when
-            when(reviewRepository.findByOrders_Id(1L)).thenReturn(Optional.of(review));
+            when(ordersRepository.findById(anyLong())).thenReturn(Optional.of(order));
             when(order.getUser()).thenReturn(user);
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.of(review));
 
             //then
             assertThrows(IllegalArgumentException.class, () -> {
-                service.deleteReview(1L, user2);
+                reviewService.createReview(requestDto, user);
             });
+        }
+
+        @Test
+        void 수정_리뷰존재X() {
+            //given
+
+            //when
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.empty());
+            //then
+            assertThrows(NullPointerException.class,()-> {
+                reviewService.updateReview(requestDto, user);
+            });
+        }
+
+        @Test
+        void 수정_권한없음() {
+            //given
+            User unAuthorizedUser = new User();
+            //when
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.of(review));
+            when(review.getOrders().getUser()).thenReturn(user);
+
+            //then
+            assertThrows(IllegalArgumentException.class,()-> {
+                reviewService.updateReview(requestDto, unAuthorizedUser);
+            });
+        }
+        @Test
+        void 삭제_리뷰없음() {
+            //given
+            //when
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.empty());
+            //then
+            assertThrows(NullPointerException.class, () -> {
+                reviewService.deleteReview(1L, user);
+            });
+            verify(reviewRepository, times(0)).delete(any(Review.class));
+        }
+
+        @Test
+        void 삭제_권한없음() {
+            //given
+            User unAuthUser = new User();
+            //when
+            when(reviewRepository.findByOrders_Id(anyLong())).thenReturn(Optional.of(review));
+            when(review.getOrders().getUser()).thenReturn(user);
+            //then
+            assertThrows(IllegalArgumentException.class, () -> {
+                reviewService.deleteReview(anyLong(), unAuthUser);
+            });
+            verify(reviewRepository, times(0)).delete(any(Review.class));
+        }
+    }
+    
+    @Nested
+    @DisplayName("리뷰 조회 테스트")
+    class Read_Reviews {
+
+        @Test
+        @DisplayName("조회 - 상품 존재 X")
+        void 조회_실패_상품없음() {
+            //given
+            //when
+            when(productRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+            //then
+            assertThrows(IllegalArgumentException.class, () -> {
+                reviewService.getProductReviewList(anyLong());
+            });
+            verify(ordersRepository, times(0)).findAllByProduct(any(Product.class));
+            verify(reviewRepository, times(0)).findAllByOrdersIn(anyList());
         }
     }
 }

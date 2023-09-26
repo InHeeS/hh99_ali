@@ -47,17 +47,16 @@ public class ReviewService {
         Orders order = ordersRepository.findById(requestDto.getOrderId())
                 .orElseThrow(() -> new NullPointerException("해당하는 주문이 존재하지 않습니다"));
 
-        if (!(order.getUser().getId().equals(user.getId()))) {
+        if (!order.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("작성 권한이 없는 유저 입니다.");
         }
 
-        Optional<Review> oldreview = reviewRepository.findByOrders_Id(requestDto.getOrderId());
-        if (oldreview.isPresent()) {
+        Optional<Review> originReview = reviewRepository.findByOrders_Id(requestDto.getOrderId());
+        if (originReview.isPresent()) {
             throw new IllegalArgumentException("이미 작성한 리뷰가 있습니다");
         }
 
         Review review = reviewRepository.save(new Review(requestDto, order));
-
         return new ReviewResponseDto(review);
     }
 
