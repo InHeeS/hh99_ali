@@ -4,7 +4,7 @@ cloud:
       accessKey: ${access}
       secretKey: ${saccess}
     s3:
-      bucket: ali-bucket1
+      bucket: bucket-ali2
     region:
       static: ap-northeast-2
     stack:
