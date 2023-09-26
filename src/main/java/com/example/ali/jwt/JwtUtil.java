@@ -94,7 +94,7 @@ public class JwtUtil {
                     .getBody();
             return claims.get("userType", String.class);
         } catch (Exception e) {
-            log.error(e.getMessage() + "getUserTypeFromToken");
+//            log.error(e.getMessage() + "getUserTypeFromToken");
             return "guest";
         }
     }

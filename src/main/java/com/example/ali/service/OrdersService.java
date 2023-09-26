@@ -57,6 +57,7 @@ public class OrdersService {
 
         Orders orders = new Orders(orderRequestDto, user, product);
         OrdersResponseDto ordersResponseDto = new OrdersResponseDto(orders);
+
         // 주문 생성
         ordersRepository.save(orders);
         return new MessageDataResponseDto("주문 성공", ordersResponseDto);
