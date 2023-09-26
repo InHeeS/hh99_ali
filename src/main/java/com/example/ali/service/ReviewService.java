@@ -47,7 +47,7 @@ public class ReviewService {
         Orders order = ordersRepository.findById(requestDto.getOrderId())
                 .orElseThrow(() -> new NullPointerException("해당하는 주문이 존재하지 않습니다"));
 
-        if (!order.getUser().equals(user)) {
+        if (!order.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("작성 권한이 없는 유저 입니다.");
         }
 
@@ -65,7 +65,7 @@ public class ReviewService {
         Review review = reviewRepository.findByOrders_Id(requestDto.getOrderId())
                 .orElseThrow(() -> new NullPointerException("해당하는 리뷰가 존재하지 않습니다"));
 
-        if (!(review.getOrders().getUser().equals(user))) {
+        if (!(review.getOrders().getUser().getId().equals(user.getId()))) {
             throw new IllegalArgumentException("작성 권한이 없는 유저 입니다.");
         }
 
@@ -78,7 +78,7 @@ public class ReviewService {
         Review review = reviewRepository.findByOrders_Id(orderId)
                 .orElseThrow(() -> new NullPointerException("해당하는 리뷰가 존재하지 않습니다"));
 
-        if (!(review.getOrders().getUser().equals(user))) {
+        if (!(review.getOrders().getUser().getId().equals(user.getId()))) {
             throw new IllegalArgumentException("삭제 권한이 없는 유저 입니다.");
         }
 
