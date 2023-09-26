@@ -52,8 +52,12 @@ public class OrdersService {
         }
         // 재고 변경
         productStock.changeStock(orderRequestDto.getQnt());
-        // 소지금 차감
+
+        // User의 소지금 차감
         realUser.getUserWallet().changePoint(totalPrice);
+
+        // 해당 제품 주인의 셀러 소지금 증가
+        product.getSeller().getSellerWallet().changePoint(totalPrice);
 
         Orders orders = new Orders(orderRequestDto, user, product);
         OrdersResponseDto ordersResponseDto = new OrdersResponseDto(orders);

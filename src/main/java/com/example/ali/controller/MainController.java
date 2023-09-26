@@ -15,7 +15,7 @@ public class MainController {
     }
 
     @GetMapping("/")
-    public ResponseEntity<?> showIndex() {
-        return new ResponseEntity<>(HttpStatus.OK);
+    public String showIndex() {
+        return "productList";
     }
 }

@@ -23,4 +23,8 @@ public class SellerWallet extends Timestamped{
     @OneToOne
     @JoinColumn(name = "seller_id")
     private Seller seller;
+
+    public void changePoint(Long totalPrice) {
+        this.point += totalPrice;
+    }
 }
