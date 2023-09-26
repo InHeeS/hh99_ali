@@ -36,28 +36,12 @@ public class Review {
     @OneToOne(fetch = FetchType.LAZY, mappedBy = "review", cascade = CascadeType.ALL)
     private Orders orders;
 
-//    @ManyToOne(fetch = FetchType.LAZY) // fetch 조인을 위한 더하기
-//    @JoinColumn(name = "order_id")
-//    private Orders orders;
-
-//    public Review(ReviewRequestDto requestDto, Orders order) {
-//        this.comment = requestDto.getComment();
-//        this.rating = requestDto.getRating();
-//        this.orders = order;
-//    }
-
     public Review(ReviewRequestDto requestDto, Orders orders) {
         this.comment = requestDto.getComment();
         this.rating = requestDto.getRating();
         this.orders = orders;
         orders.setReview(this);
     }
-
-    public Review(String comment, Integer rating) {
-        this.comment = comment;
-        this.rating = rating;
-    }
-
 
     public void update(ReviewRequestDto requestDto) {
         this.comment = requestDto.getComment();
